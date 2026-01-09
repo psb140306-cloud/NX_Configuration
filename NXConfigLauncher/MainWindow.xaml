@@ -1,0 +1,255 @@
+<Window x:Class="NXConfigLauncher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:helpers="clr-namespace:NXConfigLauncher.Helpers"
+        mc:Ignorable="d"
+        Title="NX Configuration Launcher"
+        Width="520"
+        MinHeight="600" MinWidth="500"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+        <!-- 프로세스 상태 색상 변환기 -->
+        <helpers:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- GroupBox 헤더 스타일 -->
+        <Style TargetType="GroupBox">
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" FontWeight="SemiBold" FontSize="13"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <!-- Primary 버튼 스타일 -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#106EBE"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#005A9E"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCCCCC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Secondary 버튼 스타일 -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E5E5E5"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#D0D0D0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- NX 버전 선택 영역 -->
+        <GroupBox Grid.Row="0" Header="NX 버전" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <ComboBox x:Name="cmbNxVersion"
+                          ItemsSource="{Binding NxVersions}"
+                          SelectedItem="{Binding SelectedNxVersion}"
+                          DisplayMemberPath="VersionName"
+                          Height="28"/>
+                <TextBlock x:Name="txtInstallPath"
+                           Text="{Binding SelectedNxVersion.InstallPath, StringFormat='설치 경로: {0}'}"
+                           Margin="0,8,0,0"
+                           Foreground="Gray"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- 실행 옵션 영역 -->
+        <GroupBox Grid.Row="1" Header="실행 옵션" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <!-- 네트워크 차단 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <CheckBox x:Name="chkNetworkBlock"
+                              Content="네트워크 차단 (방화벽)"
+                              IsChecked="{Binding IsNetworkBlocked}"/>
+                    <Border Background="{Binding FirewallStatusColor}"
+                            CornerRadius="3"
+                            Padding="8,2"
+                            Margin="15,0,0,0">
+                        <TextBlock Text="{Binding FirewallStatus}"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- 라이센스 포트 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="라이센스 포트:" VerticalAlignment="Center" Width="100"/>
+                    <ComboBox x:Name="cmbLicensePort"
+                              ItemsSource="{Binding AvailablePorts}"
+                              SelectedItem="{Binding SelectedPort}"
+                              Width="100" Height="26"/>
+                    <TextBlock x:Name="txtServerAddress"
+                               Text="{Binding ServerAddress, StringFormat=' @ {0}'}"
+                               VerticalAlignment="Center"
+                               Foreground="Gray"/>
+                </StackPanel>
+
+                <!-- 언어 선택 -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="언어:" VerticalAlignment="Center" Width="100"/>
+                    <RadioButton x:Name="rbEnglish"
+                                 Content="English"
+                                 IsChecked="{Binding IsEnglishSelected}"
+                                 GroupName="Language"
+                                 Margin="0,0,15,0"/>
+                    <RadioButton x:Name="rbKorean"
+                                 Content="Korean"
+                                 IsChecked="{Binding IsKoreanSelected}"
+                                 GroupName="Language"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- 프로세스 상태 영역 -->
+        <GroupBox Grid.Row="2" Header="프로세스 상태" Margin="0,0,0,10">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ItemsControl Grid.Row="0" ItemsSource="{Binding ProcessStatuses}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,3,15,3" Width="140">
+                                <TextBlock Text="{Binding StatusText}"
+                                           Foreground="{Binding IsRunning, Converter={StaticResource BoolToColorConverter}}"
+                                           FontWeight="Bold"
+                                           FontSize="11"
+                                           Width="30"
+                                           Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding ProcessName}" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button Grid.Row="1"
+                        Content="새로고침"
+                        Command="{Binding RefreshProcessStatusCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        HorizontalAlignment="Right"
+                        Padding="15,6"
+                        Margin="0,10,0,0"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- 방화벽 차단 내역 영역 (조건부 표시) -->
+        <GroupBox Grid.Row="3" Header="네트워크 차단 내역" Margin="0,0,0,10"
+                  Visibility="{Binding ShowFirewallDetails, Converter={StaticResource BoolToVisibilityConverter}}">
+            <StackPanel Margin="10">
+                <ItemsControl ItemsSource="{Binding BlockedRules}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                       Foreground="#D32F2F"
+                                       FontSize="12"
+                                       Margin="0,2"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- 상태 메시지 영역 -->
+        <Border Grid.Row="4"
+                Background="#F8F8F8"
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="10"
+                Margin="0,5,0,15">
+            <TextBlock x:Name="txtStatusMessage"
+                       Text="{Binding StatusMessage}"
+                       Foreground="{Binding StatusMessageColor}"
+                       TextWrapping="Wrap"
+                       FontSize="12"/>
+        </Border>
+
+        <!-- 하단 버튼 영역 -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+            <Button x:Name="btnLaunchNx"
+                    Content="NX 실행"
+                    Command="{Binding LaunchNxCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Width="160" Height="44"
+                    Margin="0,0,20,0"
+                    FontSize="15" FontWeight="Bold"/>
+            <Button x:Name="btnCleanProcesses"
+                    Content="프로세스 정리"
+                    Command="{Binding CleanProcessesCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Width="160" Height="44"
+                    FontSize="14"/>
+        </StackPanel>
+    </Grid>
+</Window>

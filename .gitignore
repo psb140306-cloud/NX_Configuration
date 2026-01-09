@@ -1,0 +1,50 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# NuGet
+packages/
+*.nupkg
+**/[Pp]ackages/*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Logs
+*.log
+
+# Publish
+publish/
+
+# Windows special files
+nul
+con
+prn
+aux
+
+# Conflict backup files
+*_conf(*).cs
+*_conf(*).json
+*_conf(*).xaml
+
+# Claude temp files
+.claude/
