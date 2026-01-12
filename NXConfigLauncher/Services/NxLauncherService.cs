@@ -15,6 +15,8 @@ namespace NXConfigLauncher.Services
     {
         private readonly IEnvironmentService _environmentService;
         private readonly IFirewallService _firewallService;
+        private readonly IHostsService _hostsService;
+        private readonly IProcessMonitorService _processMonitorService;
         private readonly IRegistryPathService _registryPathService;
 
         private const string LmgrdExe = "lmgrd.exe";
@@ -23,10 +25,12 @@ namespace NXConfigLauncher.Services
         // 라이선스 서버 시작 후 대기 시간 (밀리초)
         private const int LicenseServerStartupDelayMs = 2000;
 
-        public NxLauncherService(IEnvironmentService environmentService, IFirewallService firewallService, IRegistryPathService registryPathService)
+        public NxLauncherService(IEnvironmentService environmentService, IFirewallService firewallService, IHostsService hostsService, IProcessMonitorService processMonitorService, IRegistryPathService registryPathService)
         {
             _environmentService = environmentService;
             _firewallService = firewallService;
+            _hostsService = hostsService;
+            _processMonitorService = processMonitorService;
             _registryPathService = registryPathService;
         }
 
@@ -35,6 +39,8 @@ namespace NXConfigLauncher.Services
             _registryPathService = new RegistryPathService();
             _environmentService = new EnvironmentService();
             _firewallService = new FirewallService(_registryPathService);
+            _hostsService = new HostsService();
+            _processMonitorService = new ProcessMonitorService(_firewallService);
         }
 
         private bool IsLicenseServerRunning()
@@ -158,10 +164,38 @@ namespace NXConfigLauncher.Services
                     {
                         Logger.Error("Firewall rules add failed.");
                     }
+
+                    var hostsSet = _hostsService.AddDomainBlocks();
+                    if (!hostsSet)
+                    {
+                        Logger.Error("Domain blocks add failed.");
+                    }
+
+                    // Siemens 폴더 프로세스 실시간 감시 시작 (비동기)
+                    var siemensBasePath = ProcessMonitorService.GetSiemensBasePathFromNxPath(version.InstallPath)
+                                          ?? ProcessMonitorService.DetectSiemensBasePath();
+                    if (!string.IsNullOrEmpty(siemensBasePath))
+                    {
+                        // UI 블로킹 방지를 위해 백그라운드에서 실행
+                        _ = Task.Run(() =>
+                        {
+                            try
+                            {
+                                _processMonitorService.StartMonitoring(siemensBasePath);
+                                Logger.Info($"Process monitoring started for: {siemensBasePath}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"Failed to start process monitoring: {ex.Message}");
+                            }
+                        });
+                    }
                 }
                 else
                 {
                     _firewallService.RemoveBlockRules();
+                    _hostsService.RemoveDomainBlocks();
+                    _processMonitorService.StopMonitoring();
                 }
 
                 var (_, server) = _environmentService.GetLicenseServer();
@@ -247,6 +281,8 @@ namespace NXConfigLauncher.Services
             if (wasNetworkBlocked)
             {
                 _firewallService.RemoveBlockRules();
+                _hostsService.RemoveDomainBlocks();
+                _processMonitorService.StopMonitoring();
             }
         }
     }

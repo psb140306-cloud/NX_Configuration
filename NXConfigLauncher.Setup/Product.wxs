@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="NX Configuration Launcher"
+           Manufacturer="NX Config Team"
+           Version="1.0.0.0"
+           UpgradeCode="A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of NX Configuration Launcher is already installed." />
+
+    <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="NX Configuration Launcher" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+
+    <!-- 프로그램 파일 설치 디렉토리 -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="NXConfigLauncher" />
+    </StandardDirectory>
+
+    <!-- 시작 메뉴 바로가기 -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="NX Configuration Launcher"/>
+    </StandardDirectory>
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <!-- 실행 파일 -->
+      <Component Id="MainExecutable" Bitness="always64">
+        <File Id="NXConfigLauncherExe"
+              Source="$(var.SolutionDir)NXConfigLauncher\bin\Release\net8.0-windows\win-x64\publish\NXConfigLauncher.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- DLL 파일들 -->
+      <Component Id="NXConfigLauncherDll" Bitness="always64">
+        <File Id="NXConfigLauncherDll"
+              Source="$(var.SolutionDir)NXConfigLauncher\bin\Release\net8.0-windows\win-x64\publish\NXConfigLauncher.dll" />
+      </Component>
+
+      <Component Id="SystemManagement" Bitness="always64">
+        <File Id="SystemManagementDll"
+              Source="$(var.SolutionDir)NXConfigLauncher\bin\Release\net8.0-windows\win-x64\publish\System.Management.dll" />
+      </Component>
+
+      <!-- 설정 파일들 -->
+      <Component Id="ConfigFiles" Bitness="always64">
+        <File Id="AppSettingsJson"
+              Source="$(var.SolutionDir)NXConfigLauncher\bin\Release\net8.0-windows\win-x64\publish\appsettings.json" />
+        <File Id="DepsJson"
+              Source="$(var.SolutionDir)NXConfigLauncher\bin\Release\net8.0-windows\win-x64\publish\NXConfigLauncher.deps.json" />
+        <File Id="RuntimeConfigJson"
+              Source="$(var.SolutionDir)NXConfigLauncher\bin\Release\net8.0-windows\win-x64\publish\NXConfigLauncher.runtimeconfig.json" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <!-- 시작 메뉴 바로가기 -->
+    <Component Id="ApplicationShortcut" Directory="ApplicationProgramsFolder" Bitness="always64">
+      <Shortcut Id="ApplicationStartMenuShortcut"
+                Name="NX Configuration Launcher"
+                Description="NX Configuration Launcher with Network Blocking"
+                Target="[INSTALLFOLDER]NXConfigLauncher.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\NXConfigLauncher"
+                     Name="installed"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+  </Fragment>
+</Wix>

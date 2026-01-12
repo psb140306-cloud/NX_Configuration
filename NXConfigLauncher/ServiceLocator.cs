@@ -36,6 +36,7 @@ namespace NXConfigLauncher
             // 비즈니스 서비스 (Singleton - 상태를 공유해야 함)
             services.AddSingleton<IEnvironmentService, EnvironmentService>();
             services.AddSingleton<IProcessService, ProcessService>();
+            services.AddSingleton<IHostsService, HostsService>();
 
             // 의존성이 있는 서비스
             services.AddSingleton<IFirewallService>(sp =>
@@ -44,10 +45,15 @@ namespace NXConfigLauncher
             services.AddSingleton<INxDetectionService>(sp =>
                 new NxDetectionService(sp.GetRequiredService<IRegistryPathService>()));
 
+            services.AddSingleton<IProcessMonitorService>(sp =>
+                new ProcessMonitorService(sp.GetRequiredService<IFirewallService>()));
+
             services.AddSingleton<INxLauncherService>(sp =>
                 new NxLauncherService(
                     sp.GetRequiredService<IEnvironmentService>(),
                     sp.GetRequiredService<IFirewallService>(),
+                    sp.GetRequiredService<IHostsService>(),
+                    sp.GetRequiredService<IProcessMonitorService>(),
                     sp.GetRequiredService<IRegistryPathService>()));
 
             // ViewModel (Transient - 필요할 때마다 새로 생성)

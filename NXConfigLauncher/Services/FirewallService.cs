@@ -23,9 +23,29 @@ namespace NXConfigLauncher.Services
         // 차단 대상 프로세스 목록
         private static readonly string[] TargetProcesses =
         {
+            // NX 메인 프로세스
             "ugraf.exe",
+            "nx.exe",
+            "nxcam.exe",
+            "nxmanager.exe",
+            "paxar.exe",
+
+            // 라이선스 관련
+            "ugslmd.exe",
             "lmgrd.exe",
-            "ugslmd.exe"
+            "instlck.exe",
+
+            // NX 런처/유틸리티
+            "nxquicklaunch.exe",
+            "nxlauncher.exe",
+            "ugs_router.exe",
+            "run_journal.exe",
+
+            // Siemens 클라우드/텔레메트리
+            "Siemens.Discovery.Service.exe",
+            "SIEMENS_PLM_Cloud_Agent.exe",
+            "ProductExcellenceProgram.exe",
+            "ugs_update.exe"
         };
 
         // splm*.exe 패턴 매칭을 위한 접두사
@@ -138,16 +158,20 @@ namespace NXConfigLauncher.Services
         {
             var rules = new List<string>();
 
-            // 알려진 규칙들을 직접 확인
-            var knownRules = new[]
+            // 모든 차단 대상 프로세스에 대한 규칙 확인
+            foreach (var processName in TargetProcesses)
             {
-                $"{RulePrefix}ugraf",
-                $"{RulePrefix}lmgrd",
-                $"{RulePrefix}ugslmd"
-            };
+                var ruleName = GetRuleName(processName);
+                if (RuleExists(ruleName))
+                {
+                    rules.Add(ruleName);
+                }
+            }
 
-            foreach (var ruleName in knownRules)
+            // splm*.exe 규칙도 확인 (splm8 등)
+            for (int i = 1; i <= 20; i++)
             {
+                var ruleName = $"{RulePrefix}splm{i}";
                 if (RuleExists(ruleName))
                 {
                     rules.Add(ruleName);

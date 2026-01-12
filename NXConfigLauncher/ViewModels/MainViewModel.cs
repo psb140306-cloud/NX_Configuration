@@ -12,6 +12,8 @@ namespace NXConfigLauncher.ViewModels
     {
         private readonly INxDetectionService _nxDetectionService;
         private readonly IFirewallService _firewallService;
+        private readonly IHostsService _hostsService;
+        private readonly IProcessMonitorService _processMonitorService;
         private readonly IEnvironmentService _environmentService;
         private readonly IProcessService _processService;
         private readonly IConfigService _configService;
@@ -156,6 +158,48 @@ namespace NXConfigLauncher.ViewModels
             set => SetProperty(ref _blockedRules, value);
         }
 
+        private string _domainBlockStatus = "확인 중...";
+        public string DomainBlockStatus
+        {
+            get => _domainBlockStatus;
+            set => SetProperty(ref _domainBlockStatus, value);
+        }
+
+        private Brush _domainBlockStatusColor = Brushes.Gray;
+        public Brush DomainBlockStatusColor
+        {
+            get => _domainBlockStatusColor;
+            set => SetProperty(ref _domainBlockStatusColor, value);
+        }
+
+        private ObservableCollection<string> _blockedDomains = new();
+        public ObservableCollection<string> BlockedDomains
+        {
+            get => _blockedDomains;
+            set => SetProperty(ref _blockedDomains, value);
+        }
+
+        private string _processMonitorStatus = "감시 안함";
+        public string ProcessMonitorStatus
+        {
+            get => _processMonitorStatus;
+            set => SetProperty(ref _processMonitorStatus, value);
+        }
+
+        private Brush _processMonitorStatusColor = Brushes.Gray;
+        public Brush ProcessMonitorStatusColor
+        {
+            get => _processMonitorStatusColor;
+            set => SetProperty(ref _processMonitorStatusColor, value);
+        }
+
+        private int _monitoredProcessCount;
+        public int MonitoredProcessCount
+        {
+            get => _monitoredProcessCount;
+            set => SetProperty(ref _monitoredProcessCount, value);
+        }
+
         #endregion
 
         #region Commands
@@ -172,6 +216,8 @@ namespace NXConfigLauncher.ViewModels
         public MainViewModel(
             INxDetectionService nxDetectionService,
             IFirewallService firewallService,
+            IHostsService hostsService,
+            IProcessMonitorService processMonitorService,
             IEnvironmentService environmentService,
             IProcessService processService,
             IConfigService configService,
@@ -179,10 +225,15 @@ namespace NXConfigLauncher.ViewModels
         {
             _nxDetectionService = nxDetectionService;
             _firewallService = firewallService;
+            _hostsService = hostsService;
+            _processMonitorService = processMonitorService;
             _environmentService = environmentService;
             _processService = processService;
             _configService = configService;
             _nxLauncherService = nxLauncherService;
+
+            // 프로세스 차단 이벤트 구독
+            _processMonitorService.ProcessBlocked += OnProcessBlocked;
 
             // 커맨드 초기화
             LaunchNxCommand = new RelayCommand(ExecuteLaunchNx, CanExecuteLaunchNx);
@@ -199,6 +250,8 @@ namespace NXConfigLauncher.ViewModels
         public MainViewModel() : this(
             ServiceLocator.GetService<INxDetectionService>(),
             ServiceLocator.GetService<IFirewallService>(),
+            ServiceLocator.GetService<IHostsService>(),
+            ServiceLocator.GetService<IProcessMonitorService>(),
             ServiceLocator.GetService<IEnvironmentService>(),
             ServiceLocator.GetService<IProcessService>(),
             ServiceLocator.GetService<IConfigService>(),
@@ -225,6 +278,12 @@ namespace NXConfigLauncher.ViewModels
 
             // 방화벽 상태 배지만 업데이트 (박스는 숨김 유지)
             UpdateFirewallBadge();
+
+            // 도메인 차단 상태 초기화
+            RefreshDomainBlockStatus();
+
+            // 프로세스 감시 상태 초기화
+            RefreshProcessMonitorStatus();
         }
 
         private void LoadNxVersions()
@@ -349,6 +408,25 @@ namespace NXConfigLauncher.ViewModels
                 FirewallStatus = "차단 없음";
                 FirewallStatusColor = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
             }
+
+            // 도메인 차단 상태도 업데이트
+            UpdateDomainBlockBadge();
+        }
+
+        private void UpdateDomainBlockBadge()
+        {
+            var (domainCount, _) = _hostsService.GetBlockStatus();
+
+            if (domainCount > 0)
+            {
+                DomainBlockStatus = $"도메인 차단 ({domainCount}개)";
+                DomainBlockStatusColor = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
+            }
+            else
+            {
+                DomainBlockStatus = "도메인 차단 없음";
+                DomainBlockStatusColor = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
+            }
         }
 
         private void RefreshFirewallStatus()
@@ -376,6 +454,63 @@ namespace NXConfigLauncher.ViewModels
                 FirewallStatusColor = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
                 ShowFirewallDetails = false;
             }
+
+            // 도메인 차단 상태도 새로고침
+            RefreshDomainBlockStatus();
+        }
+
+        private void RefreshDomainBlockStatus()
+        {
+            var (domainCount, domains) = _hostsService.GetBlockStatus();
+
+            BlockedDomains.Clear();
+
+            if (domainCount > 0)
+            {
+                DomainBlockStatus = $"도메인 차단 ({domainCount}개)";
+                DomainBlockStatusColor = new SolidColorBrush(Color.FromRgb(244, 67, 54)); // Red
+
+                foreach (var domain in domains)
+                {
+                    BlockedDomains.Add($"• {domain}");
+                }
+            }
+            else
+            {
+                DomainBlockStatus = "도메인 차단 없음";
+                DomainBlockStatusColor = new SolidColorBrush(Color.FromRgb(76, 175, 80)); // Green
+            }
+
+            // 프로세스 감시 상태도 새로고침
+            RefreshProcessMonitorStatus();
+        }
+
+        private void RefreshProcessMonitorStatus()
+        {
+            if (_processMonitorService.IsMonitoring)
+            {
+                var blockedCount = _processMonitorService.GetBlockedProcesses().Count;
+                MonitoredProcessCount = blockedCount;
+                ProcessMonitorStatus = $"감시 중 ({blockedCount}개 차단)";
+                ProcessMonitorStatusColor = new SolidColorBrush(Color.FromRgb(33, 150, 243)); // Blue
+            }
+            else
+            {
+                MonitoredProcessCount = 0;
+                ProcessMonitorStatus = "감시 안함";
+                ProcessMonitorStatusColor = Brushes.Gray;
+            }
+        }
+
+        private void OnProcessBlocked(object? sender, ProcessBlockedEventArgs e)
+        {
+            // UI 스레드에서 실행
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                MonitoredProcessCount = _processMonitorService.GetBlockedProcesses().Count;
+                ProcessMonitorStatus = $"감시 중 ({MonitoredProcessCount}개 차단)";
+                Logger.Info($"Process blocked by monitor: {e.ProcessName} ({e.ProcessPath})");
+            });
         }
 
         private bool CanExecuteLaunchNx(object? parameter)

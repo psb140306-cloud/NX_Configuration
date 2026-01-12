@@ -1,0 +1,16 @@
+<Project Sdk="WiX.Toolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputName>NXConfigLauncherSetup</OutputName>
+    <OutputType>Package</OutputType>
+    <Platform>x64</Platform>
+    <Configuration>Release</Configuration>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WiX.Toolset.Sdk" Version="5.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Product.wxs" />
+  </ItemGroup>
+</Project>

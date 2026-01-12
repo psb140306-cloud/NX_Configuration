@@ -135,6 +135,32 @@
                     </Border>
                 </StackPanel>
 
+                <!-- 도메인 차단 상태 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="도메인 차단:" VerticalAlignment="Center" Width="100"/>
+                    <Border Background="{Binding DomainBlockStatusColor}"
+                            CornerRadius="3"
+                            Padding="8,2">
+                        <TextBlock Text="{Binding DomainBlockStatus}"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- 실시간 프로세스 감시 상태 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="프로세스 감시:" VerticalAlignment="Center" Width="100"/>
+                    <Border Background="{Binding ProcessMonitorStatusColor}"
+                            CornerRadius="3"
+                            Padding="8,2">
+                        <TextBlock Text="{Binding ProcessMonitorStatus}"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+
                 <!-- 라이센스 포트 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="라이센스 포트:" VerticalAlignment="Center" Width="100"/>
