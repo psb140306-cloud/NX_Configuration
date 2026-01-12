@@ -159,37 +159,42 @@ namespace NXConfigLauncher.Services
 
                 if (blockNetwork)
                 {
-                    var firewallSet = _firewallService.AddBlockRules(version.InstallPath);
-                    if (!firewallSet)
+                    // UI 블로킹 방지를 위해 모든 네트워크 차단 작업을 백그라운드에서 실행
+                    var installPath = version.InstallPath;
+                    _ = Task.Run(() =>
                     {
-                        Logger.Error("Firewall rules add failed.");
-                    }
-
-                    var hostsSet = _hostsService.AddDomainBlocks();
-                    if (!hostsSet)
-                    {
-                        Logger.Error("Domain blocks add failed.");
-                    }
-
-                    // Siemens 폴더 프로세스 실시간 감시 시작 (비동기)
-                    var siemensBasePath = ProcessMonitorService.GetSiemensBasePathFromNxPath(version.InstallPath)
-                                          ?? ProcessMonitorService.DetectSiemensBasePath();
-                    if (!string.IsNullOrEmpty(siemensBasePath))
-                    {
-                        // UI 블로킹 방지를 위해 백그라운드에서 실행
-                        _ = Task.Run(() =>
+                        try
                         {
-                            try
+                            // 방화벽 규칙 추가
+                            var firewallSet = _firewallService.AddBlockRules(installPath);
+                            if (!firewallSet)
+                            {
+                                Logger.Error("Firewall rules add failed.");
+                            }
+
+                            // 도메인 차단 (hosts 파일)
+                            var hostsSet = _hostsService.AddDomainBlocks();
+                            if (!hostsSet)
+                            {
+                                Logger.Error("Domain blocks add failed.");
+                            }
+
+                            // 프로세스 실시간 감시 시작
+                            var siemensBasePath = ProcessMonitorService.GetSiemensBasePathFromNxPath(installPath)
+                                                  ?? ProcessMonitorService.DetectSiemensBasePath();
+                            if (!string.IsNullOrEmpty(siemensBasePath))
                             {
                                 _processMonitorService.StartMonitoring(siemensBasePath);
                                 Logger.Info($"Process monitoring started for: {siemensBasePath}");
                             }
-                            catch (Exception ex)
-                            {
-                                Logger.Error($"Failed to start process monitoring: {ex.Message}");
-                            }
-                        });
-                    }
+
+                            Logger.Info("Network blocking setup completed");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"Failed to setup network blocking: {ex.Message}");
+                        }
+                    });
                 }
                 else
                 {
